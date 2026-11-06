@@ -1,7 +1,7 @@
 import { AnonRpcWorker } from "@anon-rpc/browser-harness";
 import type { AnonFetch } from "@anon-rpc/browser-harness";
 import {
-  BOOTSTRAP_RPCS,
+  BOOTSTRAP_RPC,
   DEFAULT_RPC,
   NETWORKS,
   type Network,
@@ -68,26 +68,16 @@ export async function directRpc(
   method: string,
   params: unknown[] = [],
 ): Promise<unknown> {
-  let lastError: Error | undefined;
-  for (const url of BOOTSTRAP_RPCS) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-        signal: AbortSignal.timeout(10_000),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as JsonRpcResponse;
-      if (json.error) throw new Error(`${method}: ${json.error.message}`);
-      return json.result;
-    } catch (error) {
-      lastError = error as Error;
-    }
-  }
-  throw new Error(
-    `bootstrap RPC failed: ${lastError?.message ?? "no provider answered"}`,
-  );
+  const res = await fetch(BOOTSTRAP_RPC, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`bootstrap RPC: HTTP ${res.status}`);
+  const json = (await res.json()) as JsonRpcResponse;
+  if (json.error) throw new Error(`${method}: ${json.error.message}`);
+  return json.result;
 }
 
 export const bootstrapProvider = {
