@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
 import { mkdir, rename } from "node:fs/promises";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:4173/";
 const OUT = process.env.OUT_DIR ?? "demo";
@@ -12,6 +13,26 @@ const context = await browser.newContext({
   recordVideo: { dir: OUT, size: { width: 1440, height: 900 } },
 });
 const page = await context.newPage();
+const account = privateKeyToAccount(generatePrivateKey());
+
+await page.exposeFunction("__crosscheckSign", async (hex) =>
+  account.signMessage({ message: { raw: hex } }),
+);
+await page.addInitScript((address) => {
+  window.ethereum = {
+    request: async ({ method, params }) => {
+      if (method === "eth_accounts" || method === "eth_requestAccounts") {
+        return [address];
+      }
+      if (method === "personal_sign") {
+        return window.__crosscheckSign(params[0]);
+      }
+      return null;
+    },
+    on() {},
+    removeListener() {},
+  };
+}, account.address);
 
 async function caption(text) {
   await page.evaluate((value) => {
@@ -63,12 +84,14 @@ try {
   await page.waitForTimeout(1800);
 
   await caption("One EIP-1186 proof, fetched through Anon-RPC");
-  await page
-    .locator("#address")
-    .fill("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
   await page.getByRole("button", { name: "Prove balance", exact: true }).click();
   await waitForSuccess("Balance proven");
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(900);
+
+  await caption("Sign with the connected wallet to prove ownership");
+  await page.getByRole("button", { name: "Sign ownership" }).click();
+  await page.locator(".owner-proof.owner-ok").waitFor({ timeout: 60_000 });
+  await page.waitForTimeout(1400);
 
   await caption("The Merkle path is checked in the browser, not by the RPC");
   await page.locator(".receipt").scrollIntoViewIfNeeded();
@@ -88,8 +111,12 @@ try {
 
   await caption("The verifier re-fetches only the block header");
   await page.getByRole("link", { name: "Open in verifier" }).click();
-  await waitForSuccess("Claim verified");
-  await page.waitForTimeout(2200);
+  await waitForSuccess("Balance verified");
+  await page.locator(".owner-status.owner-ok").waitFor({ timeout: 60_000 });
+  await page.waitForTimeout(1400);
+
+  await caption("The verifier recovers the signer and checks ownership");
+  await page.waitForTimeout(1800);
 
   await caption("Attack Lab: a lie, a forged proof, a forged header");
   await page.getByRole("link", { name: "Attack Lab" }).click();

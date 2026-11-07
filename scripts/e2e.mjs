@@ -56,7 +56,7 @@ try {
   });
 
   await page.getByRole("link", { name: "Open in verifier" }).click();
-  await waitForSuccess("Claim verified");
+  await waitForSuccess("Balance verified");
   console.log(
     "verified balance:",
     await page.locator(".balance-value").first().innerText(),

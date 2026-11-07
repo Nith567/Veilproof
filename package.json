@@ -10,6 +10,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "e2e": "node scripts/e2e.mjs",
+    "e2e:owner": "node scripts/e2e-owner.mjs",
     "demo": "node scripts/demo.mjs"
   },
   "dependencies": {

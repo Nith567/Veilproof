@@ -2,7 +2,7 @@
 
 **Private proof of funds on Ethereum.**
 
-Crosscheck proves that an address held a balance at a specific block, without requiring a wallet connection, trusting an attestor, or sending the user's IP address to the RPC. An injected wallet can optionally fill the address; it is never asked to sign or send anything. The proof is fetched through [Anon-RPC](https://github.com/ethereum/anon-rpc), verified against Ethereum's state root in the browser, and shared as a self-contained link.
+Crosscheck proves that an address held a balance at a specific block, without requiring a wallet connection, trusting an attestor, or sending the user's IP address to the RPC. An injected wallet can optionally fill the address and sign an EIP-191 ownership statement; it is never asked to sign a transaction. The proof is fetched through [Anon-RPC](https://github.com/ethereum/anon-rpc), verified against Ethereum's state root in the browser, and shared as a self-contained link.
 
 The same app includes a verifier, a malicious-RPC mode (Mendax), and an Attack Lab that demonstrates the difference between believing an RPC's JSON and checking a Merkle proof.
 
@@ -10,8 +10,8 @@ The same app includes a verifier, a malicious-RPC mode (Mendax), and an Attack L
 Prove what you hold. Reveal nothing else.
 ```
 
-**Live demo:** https://eu.orbitor.dev/ipfs/QmaLzHChpEZAsi3duwvXBZCZfpKvLSFP6mzKmSrJRxMxBJ  
-**IPFS CID:** `QmaLzHChpEZAsi3duwvXBZCZfpKvLSFP6mzKmSrJRxMxBJ`
+**Live demo:** https://eu.orbitor.dev/ipfs/QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT  
+**IPFS CID:** `QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT`
 
 ## Why this exists
 
@@ -33,7 +33,8 @@ Use cases: OTC counterparty checks, grant and airdrop eligibility, DAO membershi
 3. **Fetch the account proof.** The worker calls `eth_getProof(address, [], { blockHash })` using EIP-1898, so the proof is pinned to a known block instead of racing `latest`.
 4. **Verify locally.** The browser checks the EIP-1186 proof with `@ethereumjs/trie` against the block's `stateRoot`, decodes the account leaf, and reads the balance from the proven leaf.
 5. **Compare.** The RPC's JSON `balance` field is compared with the proven leaf. A mismatch fails closed.
-6. **Share.** The link carries the claim and the account proof in the URL fragment. The verifier re-fetches only the block header by hash, then checks the proof against that header's state root.
+6. **Sign ownership (optional).** A connected wallet can sign an EIP-191 message binding the chain, address, block, and balance. Signed links show **Owner verified**; unsigned links remain **address-only**.
+7. **Share.** The link carries the claim, the account proof, and any owner signature in the URL fragment. The verifier re-fetches only the block header by hash, then checks the proof against that header's state root.
 
 ```
 Prover browser                         Verifier browser
@@ -67,12 +68,18 @@ The proof is static and self-contained. As long as the verifier can fetch the bl
   &block=0x...
   &balance=5780441042197210512
   &proof=<base64url(JSON array of trie nodes)>
+  &sig=0x...                  # optional EIP-191 owner signature
 ```
 
 - `balance` is decimal wei.
 - `proof` is the EIP-1186 `accountProof` array, base64url-encoded.
+- `sig` is optional. The verifier recovers the signer and requires it to equal `address`.
 - The fragment is client-side only.
-- The verifier checks the block exists, the proof is valid for the address, the Merkle path matches the state root, and the claimed balance matches the proven leaf.
+- The verifier checks the block exists, the proof is valid for the address, the Merkle path matches the state root, the claimed balance matches the proven leaf, and any owner signature matches the address.
+
+## Ownership
+
+A balance proof is address-level: anyone can prove any address. Ownership is a separate signature. When the connected wallet matches the proven address, Crosscheck asks it to sign an EIP-191 message containing the chain, address, block hash, and balance. The signature travels in the URL fragment; the verifier recovers the signer and requires it to equal the claim address. Unsigned links are labeled **Address-only**. The private key never leaves the wallet, and the signature is never sent to the RPC.
 
 ## Privacy receipt
 
@@ -123,7 +130,7 @@ Crosscheck is designed as a static client so CROPS are structural properties, no
 - EIP-1186 Merkle proofs are checked against the block state root.
 - EIP-1898 pins the proof to a block hash.
 - The app fails closed when a check fails.
-- Read-only: no keys, signatures, or transactions.
+- Read-only: no keys or transactions; ownership uses an optional EIP-191 signature.
 - A production CSP pins scripts to the app bundle and the Anon-RPC harness bootstrap hash, blocks gateway-injected scripts, frames, and objects, and leaves RPC egress open because endpoints are user-configurable. The bundle itself contains no third-party trackers.
 - The Attack Lab shows a balance lie, a forged proof, and a forged header all being rejected.
 
@@ -134,7 +141,7 @@ Crosscheck is designed as a static client so CROPS are structural properties, no
 | Proof RPC provider | Address, block, balance query | Your IP behind Nym, your identity |
 | Nym mixnet | Encrypted packet metadata | RPC request contents |
 | Bootstrap RPC | Your IP, that a specifier was read | Address, balance, claim |
-| Share-link recipient | Address, block, claimed balance, proof | Your IP, your identity |
+| Share-link recipient | Address, block, balance, proof, signature if signed | Your IP, your identity |
 | Static host / gateway | Asset request metadata | Address and proof contents (they are in the fragment) |
 | This app's backend | Nothing - there is no backend | Everything |
 
@@ -143,7 +150,7 @@ Crosscheck is designed as a static client so CROPS are structural properties, no
 - **The verifier trusts its RPC for the canonical block header.** It checks the proof against the header's state root, but it does not run a light client, verify PoS signatures, or recompute the header hash. A malicious verifier RPC could serve a fabricated header. Using multiple independent RPCs or a light client would strengthen this.
 - **The address is public to the verifier and the RPC.** Privacy here is about network origin, not address confidentiality.
 - **Native ETH only.** ERC-20 balances need storage proofs and token decimals.
-- **No ownership proof.** This proves an address held a balance, not that the user controls the address. A signature-based ownership attestation is a planned extension.
+- **Unsigned claims are address-only.** They prove an address held a balance, not who controls it. Signed claims use an EIP-191 signature from an EOA; ERC-1271 smart-wallet signatures are not supported yet. A signature proves control at signing time.
 - **Nym boot can be slow or flaky.** The client reboots the mixnet up to twice on a transport error and exposes a "Restart mixnet & retry" action instead of silently falling back.
 - **The Anon-RPC worker is a trust anchor too.** It is hash-pinned by the specifier, but it sees every request and can censor or lie. The Merkle check catches a lying response; it cannot detect censorship. Sandboxing limits its reach, not trust.
 - **The specifier contract is a trust anchor.** A malicious update could point to a different worker; the bundle hash is public and auditable.
@@ -191,7 +198,7 @@ To list Crosscheck as an Anon-RPC adopter, add this entry to the `walletsAndApps
   id: "crosscheck",
   label: "Crosscheck",
   kind: "app",
-  url: "https://eu.orbitor.dev/ipfs/QmaLzHChpEZAsi3duwvXBZCZfpKvLSFP6mzKmSrJRxMxBJ",
+  url: "https://eu.orbitor.dev/ipfs/QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT",
   note: "Private proof of funds. Fetches EIP-1186 account proofs through Anon-RPC (Nym by default, Tor selectable), verifies the Merkle path in the browser, and puts the proof in a share link so anyone can re-check it without an attestor or backend.",
   workers: ["nym", "tor-js"],
 }
@@ -215,7 +222,7 @@ npm run preview    # http://localhost:4173
 npm run build:single   # dist-single/index.html, the IPFS build
 ```
 
-The address field accepts a paste or an injected wallet. Connecting a wallet only fills the address; no signature or transaction is requested.
+The address field accepts a paste or an injected wallet. Connecting a wallet only fills the address. Signing ownership is a separate optional prompt; no transaction is requested.
 
 Checks:
 
@@ -228,19 +235,20 @@ End-to-end test (with the preview server running on port 4173):
 
 ```bash
 npm run e2e
+npm run e2e:owner   # mock wallet signs the EIP-191 ownership message
 ```
 
-The E2E flow: boot Nym, fill a test address, prove its balance, open the verifier, run the Attack Lab, inspect CROPS, enable Mendax, and confirm that no share link is produced.
+The default E2E flow: boot Nym, fill a test address, prove its balance, open the verifier, run the Attack Lab, inspect CROPS, enable Mendax, and confirm that no share link is produced. The owner test injects an ephemeral test wallet, signs the claim, and checks that the verifier reports **Owner verified**.
 
-A captioned screen recording is checked in at `demo/crosscheck-demo.mp4` (67 seconds, silent). Regenerate it against the IPFS deployment or the local preview:
+A captioned screen recording is checked in at `demo/crosscheck-demo.mp4` (72 seconds, silent). Regenerate it against the IPFS deployment or the local preview:
 
 ```bash
-BASE_URL=https://eu.orbitor.dev/ipfs/QmaLzHChpEZAsi3duwvXBZCZfpKvLSFP6mzKmSrJRxMxBJ npm run demo
+BASE_URL=https://eu.orbitor.dev/ipfs/QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT npm run demo
 ```
 
 ## Deploy
 
-The live build is a single self-contained HTML file, `dist-single/index.html`, pinned at `QmaLzHChpEZAsi3duwvXBZCZfpKvLSFP6mzKmSrJRxMxBJ` and served from the Orbitor gateway above. `npm run build:single` reproduces it; `ipfs add -Q dist-single/index.html` returns the same CID.
+The live build is a single self-contained HTML file, `dist-single/index.html`, pinned at `QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT` and served from the Orbitor gateway above. `npm run build:single` reproduces it; `ipfs add -Q dist-single/index.html` returns the same CID.
 
 ```bash
 npm run build:single
@@ -250,7 +258,7 @@ ipfs add -Q dist-single/index.html
 
 The normal `npm run build` still produces the multi-file `dist` bundle for regular static hosting. `ipfs add -r dist` reproduces that multi-file root, not the live single-file CID.
 
-For ENS, set the content hash to `ipfs://QmaLzHChpEZAsi3duwvXBZCZfpKvLSFP6mzKmSrJRxMxBJ` (the encoded record is `0xe30101701220b2625f26df2f01d4f2aa276dbe63755e8d1ea9c4ea29006f1af0eeceaaec4361`). There is no server to configure.
+For ENS, set the content hash to `ipfs://QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT` (the encoded record is `0xe30101701220029f64f1124e66296b2b501aa25ab3e14302bdfe5252f102e3042b4219fcf4ee`). There is no server to configure.
 
 Public gateways differ. Some inject scripts or add a restrictive CSP. Crosscheck's own CSP blocks injected inline scripts; a gateway that adds `connect-src` restrictions will also block the RPC calls the app needs. The Orbitor gateway is used for the live demo because it permits the RPC egress.
 
@@ -266,7 +274,7 @@ vercel --prod
 1. Open the app and show the network badge. Nym boots; the status line shows retries if needed.
 2. Fill an address and prove it. Walk through the four checks: block, proof, Merkle verification, balance match.
 3. Open the privacy receipt. Optionally reveal the exit IP.
-4. Copy the share link and open it in a new tab. Show that the verifier re-fetches only the header and still reaches "Claim verified".
+4. Copy the share link and open it in a new tab. Show that the verifier re-fetches only the header and still reaches "Balance verified".
 5. Open the Attack Lab. Show 3 attacks and 3 rejections. Point out that a naive client accepts all three.
 6. Open CROPS. Connect each letter to a structural property in the code.
 7. Return to Prove, enable Mendax, and prove again. Show the caught lie and the absence of a share link.
@@ -286,7 +294,8 @@ src/
     proof.ts              EIP-1186 verifier and proof creation
     session.ts            session and boot types
     share.ts              base64url proof encoding, link build/parse
-    wallet.ts             optional injected-wallet connect
+    ownership.ts          EIP-191 owner message and recovery
+    wallet.ts             optional injected-wallet connect and signing
   components/
     ProvePanel.tsx        address, Mendax toggle, proof result, share link
     VerifyPanel.tsx       link parsing, header re-fetch, local proof check
@@ -298,10 +307,11 @@ src/
     Logo.tsx, CopyButton.tsx, CheckList.tsx, Stepper.tsx
 scripts/
   e2e.mjs                 Playwright happy-path and attack-path test
+  e2e-owner.mjs           ownership-signature test with a mock wallet
   demo.mjs                captioned screen-recording script
   build-single.mjs        inlines the app into one HTML file for IPFS
 demo/
-  crosscheck-demo.mp4     67-second silent walkthrough
+  crosscheck-demo.mp4     72-second silent walkthrough
 ```
 
 The verifier is `src/lib/proof.ts`. The UI is not trusted to decide whether a claim is valid.
