@@ -5,6 +5,7 @@ import { UNIT } from "./config";
 import { formatEth, shortHex } from "./format";
 import type { RpcWorker } from "./anon";
 import { rpc } from "./anon";
+import { verifyOwnership, type OwnershipResult } from "./ownership";
 
 export type AccountProof = {
   address: Hex;
@@ -36,6 +37,7 @@ export type Claim = {
   address: Hex;
   blockHash: Hex;
   balanceWei: string;
+  ownerSignature?: Hex;
 };
 
 export type Check = {
@@ -69,6 +71,7 @@ export type VerificationReport = {
   block?: BlockHeader;
   proof?: AccountProof;
   verified?: VerifiedAccount;
+  owner?: OwnershipResult;
   checks: Check[];
   error?: string;
   elapsedMs: Elapsed;
@@ -333,12 +336,42 @@ export async function verifyClaim(
       detail: `${formatEth(verified.balance)} ETH proven · ${formatEth(claimed)} ETH claimed`,
     });
 
+    const owner = await verifyOwnership(claim);
+    if (owner.present && !owner.verified) {
+      checks.push({
+        id: "owner",
+        label: "Owner signature invalid",
+        ok: false,
+        detail: owner.error ?? "The signature does not match the claim address.",
+      });
+      return {
+        ok: false,
+        claim,
+        block,
+        proof,
+        verified,
+        owner,
+        checks,
+        error: "Owner signature invalid",
+        elapsedMs,
+      };
+    }
+    if (owner.verified) {
+      checks.push({
+        id: "owner",
+        label: "Owner verified",
+        ok: true,
+        detail: `Signer ${shortHex(owner.signer ?? claim.address, 5)}`,
+      });
+    }
+
     return {
       ok: match,
       claim,
       block,
       proof,
       verified,
+      owner,
       checks,
       elapsedMs,
     };
@@ -452,11 +485,40 @@ export async function verifyClaimFromLink(
       detail: `${formatEth(verified.balance)} ETH proven · ${formatEth(claimed)} ETH claimed`,
     });
 
+    const owner = await verifyOwnership(claim);
+    if (owner.present && !owner.verified) {
+      checks.push({
+        id: "owner",
+        label: "Owner signature invalid",
+        ok: false,
+        detail: owner.error ?? "The signature does not match the claim address.",
+      });
+      return {
+        ok: false,
+        claim,
+        block,
+        verified,
+        owner,
+        checks,
+        error: "Owner signature invalid",
+        elapsedMs,
+      };
+    }
+    if (owner.verified) {
+      checks.push({
+        id: "owner",
+        label: "Owner verified",
+        ok: true,
+        detail: `Signer ${shortHex(owner.signer ?? claim.address, 5)}`,
+      });
+    }
+
     return {
       ok: match,
       claim,
       block,
       verified,
+      owner,
       checks,
       elapsedMs,
     };
