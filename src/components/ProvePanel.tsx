@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { isAddress } from "viem";
+import { isAddress, type Hex } from "viem";
 import { DEFAULT_RPC } from "../lib/config";
 import { formatDate, formatEth, formatInt, formatMs, shortHex } from "../lib/format";
 import { MendaxWorker } from "../lib/mendax";
@@ -55,6 +55,9 @@ export function ProvePanel({
   const [activeStep, setActiveStep] = useState<ProofStep | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [usedSession, setUsedSession] = useState<Session | null>(null);
+  const [ownerSignature, setOwnerSignature] = useState<Hex | null>(null);
+  const [ownerSigning, setOwnerSigning] = useState(false);
+  const [ownerError, setOwnerError] = useState<string | null>(null);
   const stepRef = useRef<ProofStep | null>(null);
 
   const valid = isAddress(address);
@@ -65,10 +68,19 @@ export function ProvePanel({
     attempt.rpcBalance !== undefined &&
     attempt.verified !== undefined &&
     attempt.rpcBalance !== attempt.verified.balance;
+  const claimForShare =
+    attempt?.claim && attempt.ok
+      ? { ...attempt.claim, ownerSignature: ownerSignature ?? undefined }
+      : undefined;
   const shareUrl =
-    attempt?.ok && attempt.claim && attempt.proof
-      ? buildShareUrl(attempt.claim, attempt.proof.accountProof)
+    claimForShare && attempt?.proof
+      ? buildShareUrl(claimForShare, attempt.proof.accountProof)
       : "";
+  const ownerMatches = Boolean(
+    wallet.address &&
+      attempt?.claim &&
+      wallet.address.toLowerCase() === attempt.claim.address.toLowerCase(),
+  );
 
   async function run(retry = 0) {
     if (!isAddress(address)) {
@@ -80,6 +92,8 @@ export function ProvePanel({
     setAttempt(null);
     setError(null);
     setUsedSession(null);
+    setOwnerSignature(null);
+    setOwnerError(null);
     setActiveStep("block");
     stepRef.current = "block";
     let session: Session | undefined;
@@ -117,6 +131,27 @@ export function ProvePanel({
       setActiveStep(null);
       setError(message);
       setPhase("error");
+    }
+  }
+
+  async function signClaim() {
+    if (!attempt?.claim) return;
+    if (
+      !wallet.address ||
+      wallet.address.toLowerCase() !== attempt.claim.address.toLowerCase()
+    ) {
+      setOwnerError("Connect the wallet for this address to sign.");
+      return;
+    }
+    setOwnerSigning(true);
+    setOwnerError(null);
+    try {
+      const signature = await wallet.signOwnership(attempt.claim);
+      setOwnerSignature(signature);
+    } catch (cause) {
+      setOwnerError((cause as Error).message);
+    } finally {
+      setOwnerSigning(false);
     }
   }
 
@@ -308,6 +343,38 @@ export function ProvePanel({
               </dl>
             </div>
 
+            <div
+              className={`owner-proof ${
+                ownerSignature ? "owner-ok" : "owner-warn"
+              }`}
+            >
+              <div>
+                <strong>
+                  {ownerSignature ? "Owner verified" : "Prove ownership"}
+                </strong>
+                <span>
+                  {ownerSignature
+                    ? "The share link includes your signature."
+                    : ownerMatches
+                      ? "Sign this claim with your connected wallet."
+                      : "Address-only. Connect the wallet for this address to sign."}
+                </span>
+              </div>
+              {!ownerSignature && ownerMatches && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void signClaim()}
+                  disabled={ownerSigning}
+                >
+                  {ownerSigning ? "Signing…" : "Sign ownership"}
+                </button>
+              )}
+            </div>
+            {ownerError && (
+              <p className="field-hint field-hint-bad">{ownerError}</p>
+            )}
+
             <div className="share">
               <label htmlFor="share-link">Share this claim</label>
               <input
@@ -322,7 +389,7 @@ export function ProvePanel({
                 <a
                   className="btn btn-primary"
                   href={`#${buildShareHash(
-                    attempt.claim,
+                    claimForShare ?? attempt.claim,
                     attempt.proof.accountProof,
                   )}`}
                 >
@@ -402,7 +469,7 @@ export function ProvePanel({
           <h3>What it proves</h3>
           <p>This address held this balance at this block.</p>
           <h3>What it does not</h3>
-          <p>That you control the address.</p>
+          <p>That you control the address, unless you sign the claim.</p>
         </div>
       </aside>
     </section>

@@ -87,7 +87,7 @@ export function VerifyPanel({
   const lastClaimKeyRef = useRef("");
 
   const claimKey = claim
-    ? `${claim.address}:${claim.blockHash}:${claim.balanceWei}`
+    ? `${claim.address}:${claim.blockHash}:${claim.balanceWei}:${claim.ownerSignature ?? ""}`
     : "";
   const linkProof = accountProof ?? report?.proof?.accountProof;
 
@@ -215,7 +215,7 @@ export function VerifyPanel({
           <div className="card card-soft">
             <h3>No attestor</h3>
             <p>If the claim is wrong, the Merkle check fails.</p>
-            <p className="muted">The verifier learns the address.</p>
+            <p className="muted">Signed claims also prove control of the address.</p>
           </div>
         </aside>
       </section>
@@ -250,7 +250,7 @@ export function VerifyPanel({
             className={`result ${report.ok ? "result-good" : "result-bad"}`}
           >
             <div className="result-kicker">
-              {report.ok ? "Claim verified" : "Claim rejected"}
+              {report.ok ? "Balance verified" : "Claim rejected"}
             </div>
             {report.ok && report.verified ? (
               <div className="balance">
@@ -276,6 +276,44 @@ export function VerifyPanel({
                 {formatDate(report.block.timestamp)}
               </p>
             )}
+          </div>
+        )}
+
+        {report && (
+          <div
+            className={`owner-status ${
+              report.owner?.verified
+                ? "owner-ok"
+                : report.owner?.present
+                  ? "owner-bad"
+                  : "owner-warn"
+            }`}
+          >
+            <span
+              className={`dot ${
+                report.owner?.verified
+                  ? "dot-ready"
+                  : report.owner?.present
+                    ? "dot-error"
+                    : "dot-public"
+              }`}
+            />
+            <div>
+              <strong>
+                {report.owner?.verified
+                  ? "Owner verified"
+                  : report.owner?.present
+                    ? "Owner signature invalid"
+                    : "Address-only proof"}
+              </strong>
+              <span>
+                {report.owner?.verified
+                  ? "The signer matches the claim address."
+                  : report.owner?.present
+                    ? "The signature does not match the claim address."
+                    : "Balance proven, but ownership was not signed."}
+              </span>
+            </div>
           </div>
         )}
 
@@ -351,7 +389,7 @@ export function VerifyPanel({
 
         <div className="card card-soft">
           <h3>Trusts</h3>
-          <p>The state root and a fresh block header.</p>
+          <p>The state root and a fresh block header, plus a valid owner signature when present.</p>
           <h3>Never trusts</h3>
           <p>The prover, the RPC balance, or a backend.</p>
           <p className="muted">The verifier learns the address.</p>

@@ -20,8 +20,8 @@ const CROPS = [
   {
     letter: "S",
     title: "Secure",
-    body: "Proofs are checked against Ethereum's state root.",
-    points: ["EIP-1186 + EIP-1898", "Read-only"],
+    body: "Balance proofs are checked against Ethereum's state root. Signed claims also verify the owner.",
+    points: ["EIP-1186 + EIP-1898", "Optional owner signature"],
   },
 ];
 
@@ -43,7 +43,7 @@ const THREAT_MODEL = [
   },
   {
     observer: "Share-link recipient",
-    learns: "Address, block, claimed balance",
+    learns: "Address, block, balance, signature if signed",
     hides: "Your IP, your identity",
   },
   {
@@ -135,7 +135,11 @@ export function CropsPanel() {
               The bootstrap specifier read is direct. It carries no address, but
               reveals that this client is loading.
             </li>
-            <li>Native ETH only. Ownership attestation is a future extension.</li>
+            <li>
+              Unsigned claims are address-only. Signed claims use an EIP-191
+              signature from an EOA; ERC-1271 smart wallets are not supported yet.
+            </li>
+            <li>Native ETH only. ERC-20 storage proofs are not implemented.</li>
             <li>Nym boot can be slow or flaky. The client retries.</li>
           </ul>
         </details>
