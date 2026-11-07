@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { isHex, stringToHex, type Hex } from "viem";
+import { ownershipMessage } from "./ownership";
+import type { Claim } from "./proof";
 
 type Eip1193Provider = {
   request: (args: {
@@ -105,6 +108,33 @@ export function useWallet(
     }));
   }, [onAccount]);
 
+  const signOwnership = useCallback(
+    async (claim: Claim): Promise<Hex> => {
+      const provider = window.ethereum;
+      if (!provider) throw new Error("No wallet detected.");
+      if (!state.address) throw new Error("Connect a wallet first.");
+
+      try {
+        const result = await provider.request({
+          method: "personal_sign",
+          params: [stringToHex(ownershipMessage(claim)), state.address],
+        });
+        if (typeof result !== "string" || !isHex(result)) {
+          throw new Error("Wallet returned an invalid signature.");
+        }
+        return result;
+      } catch (cause) {
+        const error = cause as { code?: number; message?: string };
+        throw new Error(
+          error.code === 4001
+            ? "Signature rejected."
+            : error.message || "Could not sign the claim.",
+        );
+      }
+    },
+    [state.address],
+  );
+
   useEffect(() => {
     const provider = window.ethereum;
     if (!provider) return;
@@ -137,7 +167,7 @@ export function useWallet(
     };
   }, [setAccount]);
 
-  return { ...state, connect, disconnect };
+  return { ...state, connect, disconnect, signOwnership };
 }
 
 export type WalletController = ReturnType<typeof useWallet>;

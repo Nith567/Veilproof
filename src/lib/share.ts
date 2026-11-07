@@ -70,6 +70,9 @@ export function buildShareHash(claim: Claim, accountProof?: Hex[]): string {
   if (accountProof && accountProof.length > 0) {
     params.set("proof", encodeProof(accountProof));
   }
+  if (claim.ownerSignature) {
+    params.set("sig", claim.ownerSignature);
+  }
   return `/verify?${params.toString()}`;
 }
 
@@ -92,6 +95,7 @@ export function parseClaimFromSearch(search: string): {
   const block = params.get("block");
   const balance = params.get("balance");
   const proof = params.get("proof");
+  const signature = params.get("sig");
 
   if (v !== "1") return { error: "Unsupported share-link version." };
   if (chain !== "1") return { error: "Only Ethereum mainnet is supported." };
@@ -103,6 +107,9 @@ export function parseClaimFromSearch(search: string): {
   }
   if (!balance || !/^\d+$/.test(balance)) {
     return { error: "The link does not contain a valid balance." };
+  }
+  if (signature && (!isHex(signature) || signature.length !== 132)) {
+    return { error: "The link does not contain a valid ownership signature." };
   }
 
   let accountProof: Hex[] | undefined;
@@ -121,6 +128,7 @@ export function parseClaimFromSearch(search: string): {
       address,
       blockHash: block,
       balanceWei: balance,
+      ownerSignature: signature ? (signature as Hex) : undefined,
     },
     accountProof,
   };
