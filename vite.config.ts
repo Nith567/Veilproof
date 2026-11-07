@@ -29,7 +29,7 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'crosscheck-csp',
+      name: 'veilproof-csp',
       apply: 'build',
       transformIndexHtml(html: string) {
         return html.replace(

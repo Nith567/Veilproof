@@ -1,8 +1,8 @@
-# Crosscheck
+# Veilproof
 
 **Private proof of funds on Ethereum.**
 
-Crosscheck proves that an address held a balance at a specific block, without requiring a wallet connection, trusting an attestor, or sending the user's IP address to the RPC. An injected wallet can optionally fill the address and sign an EIP-191 ownership statement; it is never asked to sign a transaction. The proof is fetched through [Anon-RPC](https://github.com/ethereum/anon-rpc), verified against Ethereum's state root in the browser, and shared as a self-contained link.
+Veilproof proves that an address held a balance at a specific block, without requiring a wallet connection, trusting an attestor, or sending the user's IP address to the RPC. An injected wallet can optionally fill the address and sign an EIP-191 ownership statement; it is never asked to sign a transaction. The proof is fetched through [Anon-RPC](https://github.com/ethereum/anon-rpc), verified against Ethereum's state root in the browser, and shared as a self-contained link.
 
 The same app includes a verifier, a malicious-RPC mode (Mendax), and an Attack Lab that demonstrates the difference between believing an RPC's JSON and checking a Merkle proof.
 
@@ -10,8 +10,8 @@ The same app includes a verifier, a malicious-RPC mode (Mendax), and an Attack L
 Prove what you hold. Reveal nothing else.
 ```
 
-**Live demo:** https://eu.orbitor.dev/ipfs/QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT  
-**IPFS CID:** `QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT`
+**Live demo:** https://eu.orbitor.dev/ipfs/QmWkAGyhHsz3pZGe6QEGPVhyCgw1nK3ygqTHBUys9xcPk8  
+**IPFS CID:** `QmWkAGyhHsz3pZGe6QEGPVhyCgw1nK3ygqTHBUys9xcPk8`
 
 ## Why this exists
 
@@ -22,7 +22,7 @@ Most "proof of funds" products are one of these:
 - a wallet connection that reveals the whole portfolio,
 - or a backend that learns who is asking.
 
-Crosscheck is none of those. It is a static, read-only client. It uses an EIP-1186 account proof, pinned to a block hash with EIP-1898, and checks the trie path locally. The RPC serves the proof; it does not get to decide the answer.
+Veilproof is none of those. It is a static, read-only client. It uses an EIP-1186 account proof, pinned to a block hash with EIP-1898, and checks the trie path locally. The RPC serves the proof; it does not get to decide the answer.
 
 Use cases: OTC counterparty checks, grant and airdrop eligibility, DAO membership, rentals, exchange withdrawal limits, and any situation where someone needs to show a balance without exposing their address history or network origin.
 
@@ -79,7 +79,7 @@ The proof is static and self-contained. As long as the verifier can fetch the bl
 
 ## Ownership
 
-A balance proof is address-level: anyone can prove any address. Ownership is a separate signature. When the connected wallet matches the proven address, Crosscheck asks it to sign an EIP-191 message containing the chain, address, block hash, and balance. The signature travels in the URL fragment; the verifier recovers the signer and requires it to equal the claim address. Unsigned links are labeled **Address-only**. The private key never leaves the wallet, and the signature is never sent to the RPC.
+A balance proof is address-level: anyone can prove any address. Ownership is a separate signature. When the connected wallet matches the proven address, Veilproof asks it to sign an EIP-191 message containing the chain, address, block hash, and balance. The signature travels in the URL fragment; the verifier recovers the signer and requires it to equal the claim address. Unsigned links are labeled **Address-only**. The private key never leaves the wallet, and the signature is never sent to the RPC.
 
 ## Privacy receipt
 
@@ -100,7 +100,7 @@ The only direct read is the public worker-specifier lookup. It carries no addres
 
 ## CROPS
 
-Crosscheck is designed as a static client so CROPS are structural properties, not policy statements.
+Veilproof is designed as a static client so CROPS are structural properties, not policy statements.
 
 ### Censorship-resistant
 
@@ -165,13 +165,13 @@ Crosscheck is designed as a static client so CROPS are structural properties, no
 
 The Attack Lab fetches one real mainnet snapshot through Anon-RPC, then runs three attacks in the browser:
 
-1. **Lie about the balance.** The RPC returns a valid proof but replaces the JSON balance with `1,000,000 ETH`. A naive client shares the inflated claim. Crosscheck decodes the account leaf and rejects the mismatch.
-2. **Forge the proof.** One nibble in the first proof node is flipped. The hash-linked path no longer reaches the state root. Crosscheck rejects the proof.
+1. **Lie about the balance.** The RPC returns a valid proof but replaces the JSON balance with `1,000,000 ETH`. A naive client shares the inflated claim. Veilproof decodes the account leaf and rejects the mismatch.
+2. **Forge the proof.** One nibble in the first proof node is flipped. The hash-linked path no longer reaches the state root. Veilproof rejects the proof.
 3. **Forge the header.** The RPC invents a block hash and state root, then serves the real proof against the fake root. The verifier's fresh `eth_getBlockByHash` returns nothing, so the claim is unpinned.
 
 The base block and proof are real. The tampering is simulated in the browser. No funds, keys, or transactions are involved.
 
-Mendax is the same idea in the live path: a worker wrapper that tampers with the balance JSON while leaving the proof intact. Toggle **Route through Mendax** on the Prove tab. Crosscheck catches the lie and refuses to render a share link.
+Mendax is the same idea in the live path: a worker wrapper that tampers with the balance JSON while leaving the proof intact. Toggle **Route through Mendax** on the Prove tab. Veilproof catches the lie and refuses to render a share link.
 
 ## Anon-RPC usage
 
@@ -191,14 +191,14 @@ Tor support is included, but the demo gateway in the source may not be reachable
 
 The app shows the exit IP only when you ask for it. That request is isolated from the proof requests.
 
-To list Crosscheck as an Anon-RPC adopter, add this entry to the `walletsAndApps` array in `adopters.json5` in the Anon-RPC repo:
+To list Veilproof as an Anon-RPC adopter, add this entry to the `walletsAndApps` array in `adopters.json5` in the Anon-RPC repo:
 
 ```json5
 {
-  id: "crosscheck",
-  label: "Crosscheck",
+  id: "veilproof",
+  label: "Veilproof",
   kind: "app",
-  url: "https://eu.orbitor.dev/ipfs/QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT",
+  url: "https://eu.orbitor.dev/ipfs/QmWkAGyhHsz3pZGe6QEGPVhyCgw1nK3ygqTHBUys9xcPk8",
   note: "Private proof of funds. Fetches EIP-1186 account proofs through Anon-RPC (Nym by default, Tor selectable), verifies the Merkle path in the browser, and puts the proof in a share link so anyone can re-check it without an attestor or backend.",
   workers: ["nym", "tor-js"],
 }
@@ -240,15 +240,15 @@ npm run e2e:owner   # mock wallet signs the EIP-191 ownership message
 
 The default E2E flow: boot Nym, fill a test address, prove its balance, open the verifier, run the Attack Lab, inspect CROPS, enable Mendax, and confirm that no share link is produced. The owner test injects an ephemeral test wallet, signs the claim, and checks that the verifier reports **Owner verified**.
 
-A captioned screen recording is checked in at `demo/crosscheck-demo.mp4` (72 seconds, silent). Regenerate it against the IPFS deployment or the local preview:
+A captioned screen recording is checked in at `demo/veilproof-demo.mp4` (72 seconds, silent). Regenerate it against the IPFS deployment or the local preview:
 
 ```bash
-BASE_URL=https://eu.orbitor.dev/ipfs/QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT npm run demo
+BASE_URL=https://eu.orbitor.dev/ipfs/QmWkAGyhHsz3pZGe6QEGPVhyCgw1nK3ygqTHBUys9xcPk8 npm run demo
 ```
 
 ## Deploy
 
-The live build is a single self-contained HTML file, `dist-single/index.html`, pinned at `QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT` and served from the Orbitor gateway above. `npm run build:single` reproduces it; `ipfs add -Q dist-single/index.html` returns the same CID.
+The live build is a single self-contained HTML file, `dist-single/index.html`, pinned at `QmWkAGyhHsz3pZGe6QEGPVhyCgw1nK3ygqTHBUys9xcPk8` and served from the Orbitor gateway above. `npm run build:single` reproduces it; `ipfs add -Q dist-single/index.html` returns the same CID.
 
 ```bash
 npm run build:single
@@ -258,9 +258,9 @@ ipfs add -Q dist-single/index.html
 
 The normal `npm run build` still produces the multi-file `dist` bundle for regular static hosting. `ipfs add -r dist` reproduces that multi-file root, not the live single-file CID.
 
-For ENS, set the content hash to `ipfs://QmNWtVcHLZVMNEBZBdTrtDUKdgSmo78zHYLDRstghKFaHT` (the encoded record is `0xe30101701220029f64f1124e66296b2b501aa25ab3e14302bdfe5252f102e3042b4219fcf4ee`). There is no server to configure.
+For ENS, set the content hash to `ipfs://QmWkAGyhHsz3pZGe6QEGPVhyCgw1nK3ygqTHBUys9xcPk8` (the encoded record is `0xe301017012207ce34906627e804b73b72d61e236c0ff9d52a32849d2c34421ee3c7c130a6d45`). There is no server to configure.
 
-Public gateways differ. Some inject scripts or add a restrictive CSP. Crosscheck's own CSP blocks injected inline scripts; a gateway that adds `connect-src` restrictions will also block the RPC calls the app needs. The Orbitor gateway is used for the live demo because it permits the RPC egress.
+Public gateways differ. Some inject scripts or add a restrictive CSP. Veilproof's own CSP blocks injected inline scripts; a gateway that adds `connect-src` restrictions will also block the RPC calls the app needs. The Orbitor gateway is used for the live demo because it permits the RPC egress.
 
 A Vercel fallback is configured in `vercel.json`:
 
@@ -311,7 +311,7 @@ scripts/
   demo.mjs                captioned screen-recording script
   build-single.mjs        inlines the app into one HTML file for IPFS
 demo/
-  crosscheck-demo.mp4     72-second silent walkthrough
+  veilproof-demo.mp4     72-second silent walkthrough
 ```
 
 The verifier is `src/lib/proof.ts`. The UI is not trusted to decide whether a claim is valid.
@@ -343,7 +343,7 @@ If `verifyProof` throws, or the decoded balance does not match the claim, the re
 
 ## Prior art
 
-Crosscheck is informed by Accredifi Wallet Proof Links, EAS proof-of-funds attestations, zk-flexor, and eth-proofs. The combination used here - private RPC transport, no attestor, no backend, and a self-contained share link - is the part we could not find in one place.
+Veilproof is informed by Accredifi Wallet Proof Links, EAS proof-of-funds attestations, zk-flexor, and eth-proofs. The combination used here - private RPC transport, no attestor, no backend, and a self-contained share link - is the part we could not find in one place.
 
 ## License
 
