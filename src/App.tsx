@@ -174,10 +174,10 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="topbar-main">
-            <a className="brand" href="#/prove" aria-label="Crosscheck home">
+            <a className="brand" href="#/prove" aria-label="Veilproof home">
               <Logo />
               <span className="brand-text">
-                <strong>crosscheck</strong>
+                <strong>veilproof</strong>
               </span>
             </a>
             <nav className="tabs" aria-label="Sections">
@@ -261,7 +261,7 @@ export default function App() {
 
       <footer className="footer">
         <div className="footer-inner">
-          <span>crosscheck · MIT · {YEAR}</span>
+          <span>veilproof · MIT · {YEAR}</span>
           <span className="muted">No backend. No accounts. No tracking.</span>
           <a href="#/crops">CROPS</a>
           <a

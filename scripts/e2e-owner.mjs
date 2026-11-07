@@ -10,7 +10,7 @@ const page = await browser.newPage({
   deviceScaleFactor: 1,
 });
 
-await page.exposeFunction("__crosscheckSign", async (hex) =>
+await page.exposeFunction("__veilproofSign", async (hex) =>
   account.signMessage({ message: { raw: hex } }),
 );
 await page.addInitScript((address) => {
@@ -20,7 +20,7 @@ await page.addInitScript((address) => {
         return [address];
       }
       if (method === "personal_sign") {
-        return window.__crosscheckSign(params[0]);
+        return window.__veilproofSign(params[0]);
       }
       return null;
     },

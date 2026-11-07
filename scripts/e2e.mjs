@@ -36,7 +36,7 @@ try {
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
   console.log("title:", await page.title());
   console.log("boot:", await page.locator(".boot").innerText());
-  await page.screenshot({ path: `${OUT}/crosscheck-01-home.png`, fullPage: true });
+  await page.screenshot({ path: `${OUT}/veilproof-01-home.png`, fullPage: true });
 
   await page.getByText(/Nym ready in/).waitFor({ timeout: 180_000 });
   console.log("boot ready:", await page.locator(".boot").innerText());
@@ -51,7 +51,7 @@ try {
   console.log("proved balance:", balance);
   console.log("share link:", shareLink);
   await page.screenshot({
-    path: `${OUT}/crosscheck-02-proved.png`,
+    path: `${OUT}/veilproof-02-proved.png`,
     fullPage: true,
   });
 
@@ -62,7 +62,7 @@ try {
     await page.locator(".balance-value").first().innerText(),
   );
   await page.screenshot({
-    path: `${OUT}/crosscheck-03-verified.png`,
+    path: `${OUT}/veilproof-03-verified.png`,
     fullPage: true,
   });
 
@@ -73,7 +73,7 @@ try {
     await page.locator(".verdict-row").allInnerTexts(),
   );
   await page.screenshot({
-    path: `${OUT}/crosscheck-04-attack.png`,
+    path: `${OUT}/veilproof-04-attack.png`,
     fullPage: true,
   });
 
@@ -81,7 +81,7 @@ try {
   await page.getByText("Properties, not promises").waitFor({ timeout: 10_000 });
   await page.waitForTimeout(500);
   await page.screenshot({
-    path: `${OUT}/crosscheck-05-crops.png`,
+    path: `${OUT}/veilproof-05-crops.png`,
     fullPage: true,
   });
 
@@ -89,7 +89,7 @@ try {
   await page.locator(".toggle").click();
   console.log("mendax on:", await page.locator(".toggle input").isChecked());
   await page.getByRole("button", { name: "Prove balance", exact: true }).click();
-  await waitForSuccess("Mendax lied. Crosscheck caught it.");
+  await waitForSuccess("Mendax lied. Veilproof caught it.");
   console.log(
     "mendax caught:",
     await page.locator(".alert-good .alert-detail").innerText(),
@@ -97,7 +97,7 @@ try {
   const shareVisible = await page.locator("#share-link").count();
   console.log("share link rendered after mendax:", shareVisible > 0);
   await page.screenshot({
-    path: `${OUT}/crosscheck-06-mendax.png`,
+    path: `${OUT}/veilproof-06-mendax.png`,
     fullPage: true,
   });
 

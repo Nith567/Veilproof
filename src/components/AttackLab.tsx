@@ -205,7 +205,7 @@ export function AttackLab({
                         report.ok ? "verdict-bad" : "verdict-good"
                       }`}
                     >
-                      <span className="verdict-label">Crosscheck</span>
+                      <span className="verdict-label">Veilproof</span>
                       <span className="verdict-value">
                         {report.ok ? "ACCEPTED" : "rejected"}
                       </span>

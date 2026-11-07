@@ -15,7 +15,7 @@ const context = await browser.newContext({
 const page = await context.newPage();
 const account = privateKeyToAccount(generatePrivateKey());
 
-await page.exposeFunction("__crosscheckSign", async (hex) =>
+await page.exposeFunction("__veilproofSign", async (hex) =>
   account.signMessage({ message: { raw: hex } }),
 );
 await page.addInitScript((address) => {
@@ -25,7 +25,7 @@ await page.addInitScript((address) => {
         return [address];
       }
       if (method === "personal_sign") {
-        return window.__crosscheckSign(params[0]);
+        return window.__veilproofSign(params[0]);
       }
       return null;
     },
@@ -76,7 +76,7 @@ async function waitForSuccess(text, timeout = 300_000) {
 
 try {
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
-  await caption("Crosscheck - private proof of funds");
+  await caption("Veilproof - private proof of funds");
   await page.waitForTimeout(2500);
 
   await caption("Nym: every RPC read leaves through a mixnet");
@@ -135,20 +135,20 @@ try {
   await page.getByRole("link", { name: "Prove", exact: true }).click();
   await page.locator(".toggle").click();
   await page.getByRole("button", { name: "Prove balance", exact: true }).click();
-  await waitForSuccess("Mendax lied. Crosscheck caught it.");
+  await waitForSuccess("Mendax lied. Veilproof caught it.");
   await page.waitForTimeout(2200);
 
   await caption("No keys. No backend. No tracking.");
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   await page.waitForTimeout(2400);
-  await page.screenshot({ path: `${OUT}/crosscheck-demo-final.png`, fullPage: true });
+  await page.screenshot({ path: `${OUT}/veilproof-demo-final.png`, fullPage: true });
 } finally {
   const video = page.video();
   await context.close();
   await browser.close();
   if (video) {
     const raw = await video.path();
-    const target = `${OUT}/crosscheck-demo.webm`;
+    const target = `${OUT}/veilproof-demo.webm`;
     await rename(raw, target);
     console.log("video:", target);
   }

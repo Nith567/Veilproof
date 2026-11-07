@@ -277,7 +277,7 @@ export function ProvePanel({
           <div className={`alert ${mendaxCaught ? "alert-good" : "alert-bad"}`}>
             <strong>
               {mendaxCaught
-                ? "Mendax lied. Crosscheck caught it."
+                ? "Mendax lied. Veilproof caught it."
                 : "No claim produced."}
             </strong>
             <span>{error}</span>
