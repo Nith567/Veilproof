@@ -38,7 +38,7 @@ function parsePastedValue(value: string): {
   error?: string;
 } {
   const trimmed = value.trim();
-  if (!trimmed) return { error: "Paste a Crosscheck share link." };
+  if (!trimmed) return { error: "Paste a Veilproof share link." };
   const hashPart = trimmed.includes("#")
     ? trimmed.slice(trimmed.indexOf("#") + 1)
     : trimmed;
@@ -48,7 +48,7 @@ function parsePastedValue(value: string): {
       ? hashPart
       : "";
   if (!query) {
-    return { error: "That does not look like a Crosscheck share link." };
+    return { error: "That does not look like a Veilproof share link." };
   }
   return parseClaimFromSearch(query);
 }
@@ -164,7 +164,7 @@ export function VerifyPanel({
               <p className="eyebrow">Verify</p>
               <h2>Verify a claim</h2>
               <p className="lede">
-                Paste a Crosscheck link. Your browser checks the proof.
+                Paste a Veilproof link. Your browser checks the proof.
               </p>
             </div>
             <span className="pill pill-good">Trustless</span>

@@ -10,9 +10,9 @@ export type OwnershipResult = {
 
 export function ownershipMessage(claim: Claim): string {
   return [
-    "Crosscheck ownership proof",
+    "Veilproof ownership proof",
     "Schema: 1",
-    "Domain: crosscheck",
+    "Domain: veilproof",
     `Chain: ${claim.chainId}`,
     `Address: ${claim.address.toLowerCase()}`,
     `Block: ${claim.blockHash.toLowerCase()}`,
